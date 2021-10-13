@@ -67,6 +67,7 @@ ttest_types = {"two-sided": "two-sided",
 
 class LNTT(multiprocessing.Process):
     
+    VERSION = "1.0.1"
     COLOR_REGULATION_TREATED = "#998ec3"
     COLOR_REGULATION_TREATED_LABEL = "#6a6388"
     COLOR_REGULATION_WT = "#f1a340"

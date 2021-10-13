@@ -232,7 +232,7 @@ class Welcome(tk.Frame):
         
         self.width = 630
         self.height = 180
-        self.root.title('Lightweight Normalization & Testing Tool')
+        self.root.title('Lightweight Normalization & Testing Tool - v%s' % lntt.LNTT.VERSION)
         self.root.geometry("%ix%i" % (self.width, self.height))
         self.root.resizable(0, 0) #Don't allow resizing in the x or y direction
         self.create_widgets()
@@ -318,7 +318,7 @@ class Excel_loading(tk.Frame):
         
         self.width = 565
         self.height = 300
-        self.root.title('Lightweight Normalization & Testing Tool')
+        self.root.title('Lightweight Normalization & Testing Tool - v%s' % lntt.LNTT.VERSION)
         self.root.geometry("%ix%i" % (self.width, self.height))
         self.root.resizable(0, 0) #Don't allow resizing in the x or y direction
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
@@ -496,7 +496,7 @@ class LNTT_GUI(tk.Frame):
         self.parameters = parameters
         self.height = 700
         self.width = int(self.height * 1.618033)
-        self.root.title('Lightweight Normalization & Testing Tool')
+        self.root.title('Lightweight Normalization & Testing Tool - v%s' % lntt.LNTT.VERSION)
         self.root.geometry("%ix%i" % (self.width, self.height))
         self.root.resizable(0, 0) #Don't allow resizing in the x or y direction
         self.progressbar = None
