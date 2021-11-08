@@ -67,7 +67,6 @@ ttest_types = {"two-sided": "two-sided",
 
 class LNTT(multiprocessing.Process):
     
-    VERSION = "1.0.1"
     COLOR_REGULATION_TREATED = "#998ec3"
     COLOR_REGULATION_TREATED_LABEL = "#6a6388"
     COLOR_REGULATION_WT = "#f1a340"
@@ -550,7 +549,7 @@ class LNTT(multiprocessing.Process):
 
 
 
-    def statistical_tesing(self, data_frame, stat_parameters, conditions, output_folder, parameters, internal_queue, report):
+    def statistical_tesing(self, test_num, data_frame, stat_parameters, conditions, output_folder, parameters, internal_queue, report):
         global normalized_suffix, pval_adjust_methods, ttest_types
         
         test_method = stat_parameters["test"] if "test" in stat_parameters else "ttest"
@@ -579,7 +578,7 @@ class LNTT(multiprocessing.Process):
             with_ttest_type = (scipy_version[0] == 1 and scipy_version[1] >= 6) or scipy_version[0] > 1
             
             # setting default parameters when not provided by user and warn
-            test_name = "%s-%s" % (stat_parameters["condition_treated"], stat_parameters["condition_wt"])
+            test_name = "Test%i-%s-%s" % (test_num + 1, stat_parameters["condition_treated"], stat_parameters["condition_wt"])
             self.logging.put("Performing statistical testing on '%s'" % test_name)
             if "pval_adjust" not in stat_parameters: self.logging.put("Warning: no p-value correction was defined, 'fdr_bh' is selected by default.")
             if "ttest_equal_variance" not in stat_parameters: self.logging.put("Warning: no equal variance on T-test was specified, unequal variance (Welch T-test) is selected by default.")
@@ -624,7 +623,7 @@ class LNTT(multiprocessing.Process):
             p_values = np.zeros(l, dtype = "float64")
             t_statistic = np.zeros(l, dtype = "float64")
             ttest_func = stats.ttest_rel if ttest_paired else stats.ttest_ind
-            p_val_parameters = {"alternative": alternative} if with_ttest_type else {"equal_var": equal_var}
+            p_val_parameters = {"alternative": alternative, "equal_var": equal_var} if with_ttest_type else {"equal_var": equal_var}
                 
             for index, row in data_frame[column_names].iterrows():
                 try:
@@ -643,7 +642,7 @@ class LNTT(multiprocessing.Process):
                 elif len(c1_no_nan) == 0: p_values[index] = -2
                 elif len(c2_no_nan) == 0: p_values[index] = -1
                 elif len(c1_no_nan) == 1 or len(c2_no_nan) == 1 or len(c1_no_nan) / len(c1) < filter_out or len(c2_no_nan) / len(c2) < filter_out: p_values[index] = -4
-                else: 
+                else:
                     values = ttest_func(c1_no_nan, c2_no_nan, **p_val_parameters)
                     t_statistic[index] = values[0]
                     p_values[index] = values[1]
@@ -1642,28 +1641,6 @@ class LNTT(multiprocessing.Process):
             except:
                 pass
 
-            # cv filtering
-            if "with_cv_threshold" in parameters and parameters["with_cv_threshold"]: self.cv_filtering(data_frame, column_names, parameters, internal_queue, report)
-            
-            try:
-                if self.interrupt or internal_queue.get_nowait() != None:
-                    self.logging.put("Analysis interrupted")
-                    self.logging.put(None)
-                    return
-            except:
-                pass
-            
-            # requesting gene names
-            if "with_gene_name_request" in parameters and parameters["with_gene_name_request"]: self.gene_name_request(data_frame, parameters, internal_queue, report)
-
-            try:
-                if self.interrupt or internal_queue.get_nowait() != None:
-                    self.logging.put("Analysis interrupted")
-                    self.logging.put(None)
-                    return
-            except:
-                pass
-
             # normalization
             if "with_normalization" in parameters and parameters["with_normalization"]: self.normalization(data_frame, output_folder_normalization, column_names, conditions, parameters, internal_queue, report)
 
@@ -1675,7 +1652,9 @@ class LNTT(multiprocessing.Process):
             except:
                 pass
 
-            # normalization
+
+
+            # pairwise log_fc 
             if "pairwise_log_fc" in parameters and parameters["pairwise_log_fc"]: self.pairwise_log_fc(data_frame, output_folder_normalization, column_names, parameters, internal_queue, report)
 
             try:
@@ -1685,12 +1664,39 @@ class LNTT(multiprocessing.Process):
                     return
             except:
                 pass
+            
+            
+            
+
+            # cv filtering
+            if "with_cv_threshold" in parameters and parameters["with_cv_threshold"]: self.cv_filtering(data_frame, column_names, parameters, internal_queue, report)
+            
+            try:
+                if self.interrupt or internal_queue.get_nowait() != None:
+                    self.logging.put("Analysis interrupted")
+                    self.logging.put(None)
+                    return
+            except:
+                pass
+            
+            
+            # requesting gene names
+            if "with_gene_name_request" in parameters and parameters["with_gene_name_request"]: self.gene_name_request(data_frame, parameters, internal_queue, report)
+
+            try:
+                if self.interrupt or internal_queue.get_nowait() != None:
+                    self.logging.put("Analysis interrupted")
+                    self.logging.put(None)
+                    return
+            except:
+                pass
+            
 
             # statistical tesing
             if "statistical_testing" in parameters and len(parameters["statistical_testing"]) > 0:
                 if report != None: report.append("Statistical testing was done on the following conditions: '%s'." % "', '".join(c for c in conditions))
-                for stat_parameters in parameters["statistical_testing"]:
-                    self.statistical_tesing(data_frame, stat_parameters, conditions, output_folder_stat_test, parameters, internal_queue, report)
+                for i, stat_parameters in enumerate(parameters["statistical_testing"]):
+                    self.statistical_tesing(i, data_frame, stat_parameters, conditions, output_folder_stat_test, parameters, internal_queue, report)
 
 
             try:

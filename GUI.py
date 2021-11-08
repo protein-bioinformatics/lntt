@@ -232,7 +232,7 @@ class Welcome(tk.Frame):
         
         self.width = 630
         self.height = 180
-        self.root.title('Lightweight Normalization & Testing Tool - v%s' % lntt.LNTT.VERSION)
+        self.root.title('Lightweight Normalization & Testing Tool')
         self.root.geometry("%ix%i" % (self.width, self.height))
         self.root.resizable(0, 0) #Don't allow resizing in the x or y direction
         self.create_widgets()
@@ -318,7 +318,7 @@ class Excel_loading(tk.Frame):
         
         self.width = 565
         self.height = 300
-        self.root.title('Lightweight Normalization & Testing Tool - v%s' % lntt.LNTT.VERSION)
+        self.root.title('Lightweight Normalization & Testing Tool')
         self.root.geometry("%ix%i" % (self.width, self.height))
         self.root.resizable(0, 0) #Don't allow resizing in the x or y direction
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
@@ -496,7 +496,7 @@ class LNTT_GUI(tk.Frame):
         self.parameters = parameters
         self.height = 700
         self.width = int(self.height * 1.618033)
-        self.root.title('Lightweight Normalization & Testing Tool - v%s' % lntt.LNTT.VERSION)
+        self.root.title('Lightweight Normalization & Testing Tool')
         self.root.geometry("%ix%i" % (self.width, self.height))
         self.root.resizable(0, 0) #Don't allow resizing in the x or y direction
         self.progressbar = None
@@ -1321,7 +1321,7 @@ class LNTT_GUI(tk.Frame):
         label_paired["width"] = w_labels
         label_paired.origin = {"ttest": [5, combo_condition_wt.winfo_height() + combo_condition_wt.winfo_y() + h_distance]}
         paired = tk.IntVar()
-        checkbutton_paired = tk.Checkbutton(frame.scrollable_frame, command = lambda: self.change_checkbox(page_id, "ttest_paired", paired))
+        checkbutton_paired = tk.Checkbutton(frame.scrollable_frame, variable = paired, command = lambda: self.change_checkbox(page_id, "ttest_paired", paired))
         checkbutton_paired.place(x = x_widgets, y = combo_condition_wt.winfo_height() + combo_condition_wt.winfo_y() + h_distance)
         checkbutton_paired.origin = {"ttest": [x_widgets, combo_condition_wt.winfo_height() + combo_condition_wt.winfo_y() + h_distance]}
         self.test_widgets[-1]["ttest"].append(label_paired)
@@ -1354,7 +1354,8 @@ class LNTT_GUI(tk.Frame):
         label_equal_varience["width"] = w_labels
         label_equal_varience.origin = {"ttest": [5, combo_ttest_type.winfo_height() + combo_ttest_type.winfo_y() + h_distance]}
         equal_variance = tk.IntVar()
-        checkbutton_equal_varience = tk.Checkbutton(frame.scrollable_frame, command = lambda: self.change_checkbox(page_id, "ttest_equal_variance", equal_variance))
+        if not new_entry and "ttest_equal_variance" in stat_data: equal_variance.set(stat_data["ttest_equal_variance"])
+        checkbutton_equal_varience = tk.Checkbutton(frame.scrollable_frame, variable = equal_variance, command = lambda: self.change_checkbox(page_id, "ttest_equal_variance", equal_variance))
         checkbutton_equal_varience.place(x = x_widgets, y = combo_ttest_type.winfo_height() + combo_ttest_type.winfo_y() + h_distance)
         checkbutton_equal_varience.origin = {"ttest": [x_widgets, combo_ttest_type.winfo_height() + combo_ttest_type.winfo_y() + h_distance]} 
         self.test_widgets[-1]["ttest"].append(label_equal_varience)
