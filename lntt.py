@@ -829,7 +829,7 @@ class LNTT(multiprocessing.Process):
                 if with_labeling and regulated_exist:
                     xx = np.array(plt_log2_fold_change[custom_labels_plot], dtype = "float64")
                     yy = np.array(m_log_p_values[custom_labels_plot], dtype = "float64")
-                    labels = list(data_frame[stat_parameters["labeling_column"]][good_p][custom_labels_plot])
+                    labels = list(str(s) for s in data_frame[stat_parameters["labeling_column"]][good_p][custom_labels_plot])
                     label_xx, label_yy = self.automated_annotation(xx, yy, internal_queue)
                     up_down = np.zeros(l, dtype = np.int64)[good_p]
                     up_down[condition_down] = 1
@@ -872,7 +872,7 @@ class LNTT(multiprocessing.Process):
                 color_code = ['#000000', LNTT.COLOR_REGULATION_WT_LABEL, LNTT.COLOR_REGULATION_TREATED_LABEL]
                 
                 # plot the labels if desired
-                if with_labeling and regulated_exist:                
+                if with_labeling and regulated_exist:
                     for xp, yp, xl, yl, label, reg in zip(xx, yy, label_xx, label_yy, labels, regulated):
                         if len(label) > 10: label = "%s..." % label[:7]
                         ax_main.annotate(label, (xp, yp), xytext=(xl, yl), color = color_code[reg], fontsize = 7, weight = "bold", verticalalignment='center', horizontalalignment='center', arrowprops = dict(arrowstyle="->", connectionstyle="angle3,angleA=0,angleB=-90", linewidth=0.5, alpha = 0.5), bbox=dict(pad = -1, facecolor="none", edgecolor="none"))
@@ -1033,7 +1033,7 @@ class LNTT(multiprocessing.Process):
                 if with_labeling and regulated_exist:
                     xx = np.array(plt_log2_fold_change[custom_labels_plot], dtype = "float64")
                     yy = np.array(m_log_adj_p_values[custom_labels_plot], dtype = "float64")
-                    labels = list(data_frame[stat_parameters["labeling_column"]][good_p][custom_labels_plot])
+                    labels = list(str(s) for s in data_frame[stat_parameters["labeling_column"]][good_p][custom_labels_plot])
                     label_xx, label_yy = self.automated_annotation(xx, yy, internal_queue)
                     up_down = np.zeros(l, dtype = np.int64)[good_p]
                     up_down[condition_down] = 1
@@ -1529,6 +1529,8 @@ class LNTT(multiprocessing.Process):
             skip_rows = parameters["skip_rows"] if "skip_rows" in parameters else []
             na_values = parameters["na_values"] if "na_values" in parameters else []
             delimiter = parameters["delimiter"] if "delimiter" in parameters else None
+            na_values.append(0)
+            na_values.append("0")
             try:
                 data_frame = pd.read_excel(data_file, data_sheet, skiprows = skip_rows, na_values = na_values)
             except:
