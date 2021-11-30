@@ -1631,9 +1631,8 @@ class LNTT(multiprocessing.Process):
             report.append("The initial list contained %i entries." % len(data_frame))
             self.logging.put("Start processing with %i entries." % len(data_frame))
 
-            # data imputation
-            if "with_data_imputation" in parameters and parameters["with_data_imputation"]:
-                self.data_frame_imputation(data_frame, column_names, parameters, internal_queue, report)
+            # normalization
+            if "with_normalization" in parameters and parameters["with_normalization"]: self.normalization(data_frame, output_folder_normalization, column_names, conditions, parameters, internal_queue, report)
 
             try:
                 if self.interrupt or internal_queue.get_nowait() != None:
@@ -1643,8 +1642,10 @@ class LNTT(multiprocessing.Process):
             except:
                 pass
 
-            # normalization
-            if "with_normalization" in parameters and parameters["with_normalization"]: self.normalization(data_frame, output_folder_normalization, column_names, conditions, parameters, internal_queue, report)
+
+            # data imputation
+            if "with_data_imputation" in parameters and parameters["with_data_imputation"]:
+                self.data_frame_imputation(data_frame, column_names, parameters, internal_queue, report)
 
             try:
                 if self.interrupt or internal_queue.get_nowait() != None:
