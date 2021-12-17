@@ -785,7 +785,7 @@ class LNTT(multiprocessing.Process):
                 plot_width = 6 + 3 * exclusively_wt.any() + 3 * exclusively_treated.any()
                 plot_height = 6
                 plot_ratios = [1, 2] if exclusively_wt.any() else [2]
-                if exclusively_wt.any(): plot_ratios.append(1)
+                if exclusively_treated.any(): plot_ratios.append(1)
                 
                 fig, ax = plt.subplots(1, num_subplots, figsize=(plot_width, plot_height), gridspec_kw={'width_ratios': plot_ratios})#, tight_layout=True)
                 if num_subplots == 1: ax_main = ax
@@ -793,7 +793,7 @@ class LNTT(multiprocessing.Process):
                 
                 
                 # force to have same y scheme
-                exclusively_y_min, exclusively_y_min = -1, -1
+                exclusively_y_min, exclusively_y_max = 1e9, -1
                 if exclusively_wt.any():
                     exclusively_y_min = min(means_condition_wt[exclusively_wt])
                     exclusively_y_max = max(means_condition_wt[exclusively_wt])
@@ -998,7 +998,7 @@ class LNTT(multiprocessing.Process):
                 
                 
                 # force to have same y scheme
-                exclusively_y_min, exclusively_y_min = -1, -1
+                exclusively_y_min, exclusively_y_max = 1e9, -1
                 if exclusively_wt.any():
                     exclusively_y_min = min(means_condition_wt[exclusively_wt])
                     exclusively_y_max = max(means_condition_wt[exclusively_wt])
