@@ -264,20 +264,20 @@ class LNTT(multiprocessing.Process):
             Y = data_frame[col_name]
             masked_Y = np.ma.masked_where(np.isnan(Y), Y)
             violin_data = np.log10(Y)
-            violin_distribution.append(np.array(violin_data[~np.isnan(violin_data)]))
+            violin_distribution.append(np.array(violin_data[~np.isnan(violin_data)]).tolist())
             
             if col_name == reference:
                 reference_col_num = cc
                 
                 violin_data = np.log10(Y)
-                violin_distribution_2.append(np.array(violin_data[~np.isnan(violin_data)]))
+                violin_distribution_2.append(np.array(violin_data[~np.isnan(violin_data)]).tolist())
                 Y_no_nans = ~np.isnan(Y)
                 vd_col_names.append("%s (%i)" % (col_name, np.sum(Y_no_nans)))
                 original_data_frame.insert(col_cnt, "%s%s" % (col_name, normalized_suffix),  np.array([Y[j] for j in unsorting]), True)
                 col_cnt += 1
                 continue
             violin_data_col = np.log10(data_frame[col_name] / RefX)
-            violin_data_frame.append(np.array(violin_data_col[~np.isnan(violin_data_col)]))
+            violin_data_frame.append(np.array(violin_data_col[~np.isnan(violin_data_col)]).tolist())
 
             Y_l = np.array(Y / RefX)
             
@@ -328,7 +328,7 @@ class LNTT(multiprocessing.Process):
                 
             normalized_column_data = Y / YY
             violin_data_col = np.log10(normalized_column_data / RefX)
-            violin_data_frame_2.append(np.array(violin_data_col[~np.isnan(violin_data_col)]))
+            violin_data_frame_2.append(np.array(violin_data_col[~np.isnan(violin_data_col)]).tolist())
             Y_no_nans = ~np.isnan(normalized_column_data / RefX)
             violin_col_names.append("%s (%i)" % (col_name, np.sum(Y_no_nans)))
             try:
@@ -367,7 +367,7 @@ class LNTT(multiprocessing.Process):
                 
             normalized_column_data = Y / YY
             violin_data = np.log10(normalized_column_data)
-            violin_distribution_2.append(np.array(violin_data[~np.isnan(violin_data)]))
+            violin_distribution_2.append(np.array(violin_data[~np.isnan(violin_data)]).tolist())
             Y_no_nans = ~np.isnan(normalized_column_data)
             vd_col_names.append("%s (%i)" % (col_name, np.sum(Y_no_nans)))
             
@@ -436,15 +436,39 @@ class LNTT(multiprocessing.Process):
             col_cnt += 1
             
         
+        
+        
+        
         if with_plotting:
+            violin_file = []
+            violin_file.append("import matplotlib.pyplot as plt")
+            violin_file.append("COLOR_REGULATION_TREATED = '%s'" % LNTT.COLOR_REGULATION_TREATED)
+            violin_file.append("COLOR_REGULATION_TREATED_LABEL = '%s'" % LNTT.COLOR_REGULATION_TREATED_LABEL)
+            violin_file.append("violin_data_frame = %s" % str(violin_data_frame))
+            violin_file.append("violin_data_frame_2 = %s" % str(violin_data_frame_2))
+            violin_file.append("violin_col_names = %s" % str(violin_col_names))
+            violin_file.append("reference = '%s'" % reference)
+            
+            
+            
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 9), sharex = True, sharey = True)
             violin_parts = ax1.violinplot(violin_data_frame, range(len(violin_data_frame)), widths=0.8, showmeans=True, showextrema=True)
             for i, pc in enumerate(violin_parts['bodies']):
                 pc.set_facecolor(LNTT.COLOR_REGULATION_TREATED)
                 pc.set_edgecolor(LNTT.COLOR_REGULATION_TREATED_LABEL)
                 pc.set_alpha(1)
-            ax1.set_ylabel("log${}_{10}$ protein abundance\nratios to reference")
+            ax1.set_ylabel('log${}_{10}$ protein abundance\nratios to reference')
             ax1.grid()
+            
+            violin_file.append("fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 9), sharex = True, sharey = True)")
+            violin_file.append("violin_parts = ax1.violinplot(violin_data_frame, range(len(violin_data_frame)), widths=0.8, showmeans=True, showextrema=True)")
+            violin_file.append("for i, pc in enumerate(violin_parts['bodies']):")
+            violin_file.append("    pc.set_facecolor(COLOR_REGULATION_TREATED)")
+            violin_file.append("    pc.set_edgecolor(COLOR_REGULATION_TREATED_LABEL)")
+            violin_file.append("    pc.set_alpha(1)")
+            violin_file.append("ax1.set_ylabel('log${}_{10}$ protein abundance\\nratios to reference')")
+            violin_file.append("ax1.grid()")
+            
             try:
                 result = internal_queue.get_nowait()
                 if result != None:
@@ -458,10 +482,20 @@ class LNTT(multiprocessing.Process):
                 pc.set_facecolor(LNTT.COLOR_REGULATION_TREATED)
                 pc.set_edgecolor(LNTT.COLOR_REGULATION_TREATED_LABEL)
                 pc.set_alpha(1)
-            ax2.set_ylabel("log${}_{10}$ protein abundance\nratios to reference")
+            ax2.set_ylabel('log${}_{10}$ protein abundance\nratios to reference')
             ax2.grid()
-            
             plt.xticks(range(len(violin_col_names)), violin_col_names, rotation = 45, horizontalalignment='right')
+            
+            violin_file.append("violin_parts = ax2.violinplot(violin_data_frame_2, range(len(violin_data_frame_2)), widths=0.8, showmeans=True, showextrema=True)")
+            violin_file.append("for i, pc in enumerate(violin_parts['bodies']):")
+            violin_file.append("    pc.set_facecolor(COLOR_REGULATION_TREATED)")
+            violin_file.append("    pc.set_edgecolor(COLOR_REGULATION_TREATED_LABEL)")
+            violin_file.append("    pc.set_alpha(1)")
+            violin_file.append("ax2.set_ylabel('log${}_{10}$ protein abundance\\nratios to reference')")
+            violin_file.append("ax2.grid()")
+            violin_file.append("plt.xticks(range(len(violin_col_names)), violin_col_names, rotation = 45, horizontalalignment='right')")
+            
+            
             try:
                 result = internal_queue.get_nowait()
                 if result != None:
@@ -470,8 +504,8 @@ class LNTT(multiprocessing.Process):
             except:
                 pass
             
-            fig.suptitle("Overview of protein rations during normalization\nagainst reference column '%s'" % reference)
-            fig_filename = os.path.join(output_folder, "normalization-overview.pdf")
+            fig.suptitle('Overview of protein rations during normalization\\nagainst reference column \'%s\'' % reference)
+            fig_filename = os.path.join(output_folder, 'normalization-overview.pdf')
             plt.savefig(fig_filename, dpi = 600)
             
             try:
@@ -482,15 +516,41 @@ class LNTT(multiprocessing.Process):
             except:
                 pass
             
-            fig_filename = os.path.join(output_folder, "normalization-overview.png")
+            fig_filename = os.path.join(output_folder, 'normalization-overview.png')
             plt.savefig(fig_filename, dpi = 600)
             plt.cla()   # Clear axis
             plt.clf()   # Clear figure
             plt.close() # Close a figure window
             
             
+            violin_file.append("fig.suptitle('Overview of protein rations during normalization\\nagainst reference column \\'%s\\'' % reference)")
+            violin_file.append("plt.savefig('normalization-overview.pdf', dpi = 600)")
+            violin_file.append("plt.savefig('normalization-overview.png', dpi = 600)")
+            violin_file.append("plt.cla()   # Clear axis")
+            violin_file.append("plt.clf()   # Clear figure")
+            violin_file.append("plt.close() # Close a figure window")
             
             
+            violin_file_filename = os.path.join(output_folder, 'normalization-overview.py')
+            with open(violin_file_filename, "wt") as out:
+                out.write("%s\n" % "\n".join(violin_file))
+            
+            
+            
+            
+            
+            
+            
+            
+            distribution_file = []
+            distribution_file.append("import matplotlib.pyplot as plt")
+            distribution_file.append("COLOR_REGULATION_WT = '%s'" % LNTT.COLOR_REGULATION_WT)
+            distribution_file.append("COLOR_REGULATION_TREATED_LABEL = '%s'" % LNTT.COLOR_REGULATION_TREATED_LABEL)
+            distribution_file.append("COLOR_REGULATION_TREATED = '%s'" % LNTT.COLOR_REGULATION_TREATED)
+            distribution_file.append("violin_distribution = %s" % str(violin_distribution))
+            distribution_file.append("violin_distribution_2 = %s" % str(violin_distribution_2))
+            distribution_file.append("reference_col_num = %s" % str(reference_col_num))
+            distribution_file.append("vd_col_names = %s" % str(vd_col_names))
             
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 9), sharex = True, sharey = True)
             fig.suptitle("Overview of protein abundance distributions during normalization")
@@ -501,6 +561,16 @@ class LNTT(multiprocessing.Process):
                 pc.set_alpha(1)
             ax1.set_ylabel("log${}_{10}$ protein abundances")
             ax1.grid()
+            
+            distribution_file.append("fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 9), sharex = True, sharey = True)")
+            distribution_file.append("fig.suptitle('Overview of protein abundance distributions during normalization')")
+            distribution_file.append("violin_parts = ax1.violinplot(violin_distribution, range(len(violin_distribution)), widths=0.8, showmeans=True, showextrema=True)")
+            distribution_file.append("for i, pc in enumerate(violin_parts['bodies']):")
+            distribution_file.append("    pc.set_facecolor(COLOR_REGULATION_WT if i == reference_col_num else COLOR_REGULATION_TREATED)")
+            distribution_file.append("    pc.set_edgecolor(COLOR_REGULATION_TREATED_LABEL)")
+            distribution_file.append("    pc.set_alpha(1)")
+            distribution_file.append("ax1.set_ylabel('log${}_{10}$ protein abundances')")
+            distribution_file.append("ax1.grid()")
             try:
                 result = internal_queue.get_nowait()
                 if result != None:
@@ -514,10 +584,18 @@ class LNTT(multiprocessing.Process):
                 pc.set_facecolor(LNTT.COLOR_REGULATION_WT if i == reference_col_num else LNTT.COLOR_REGULATION_TREATED)
                 pc.set_edgecolor(LNTT.COLOR_REGULATION_TREATED_LABEL)
                 pc.set_alpha(1)
-            ax2.set_ylabel("log${}_{10}$ protein abundances")
+            ax2.set_ylabel('log${}_{10}$ protein abundances')
             ax2.grid()
-            
             plt.xticks(range(len(vd_col_names)), vd_col_names, rotation = 45, horizontalalignment='right')
+            
+            distribution_file.append("violin_parts = ax2.violinplot(violin_distribution_2, range(len(violin_distribution_2)), widths=0.8, showmeans=True, showextrema=True)")
+            distribution_file.append("for i, pc in enumerate(violin_parts['bodies']):")
+            distribution_file.append("    pc.set_facecolor(COLOR_REGULATION_WT if i == reference_col_num else COLOR_REGULATION_TREATED)")
+            distribution_file.append("    pc.set_edgecolor(COLOR_REGULATION_TREATED_LABEL)")
+            distribution_file.append("    pc.set_alpha(1)")
+            distribution_file.append("ax2.set_ylabel('log${}_{10}$ protein abundances')")
+            distribution_file.append("ax2.grid()")
+            distribution_file.append("plt.xticks(range(len(vd_col_names)), vd_col_names, rotation = 45, horizontalalignment='right')")
             
             try:
                 result = internal_queue.get_nowait()
@@ -528,7 +606,7 @@ class LNTT(multiprocessing.Process):
                 pass
 
             #plt.tight_layout()
-            fig_filename = os.path.join(output_folder, "distribution-overview.pdf")
+            fig_filename = os.path.join(output_folder, 'distribution-overview.pdf')
             plt.savefig(fig_filename, dpi = 600)
             try:
                 result = internal_queue.get_nowait()
@@ -537,14 +615,23 @@ class LNTT(multiprocessing.Process):
                     return
             except:
                 pass
-            fig_filename = os.path.join(output_folder, "distribution-overview.png")
+            fig_filename = os.path.join(output_folder, 'distribution-overview.png')
             plt.savefig(fig_filename, dpi = 600)
             plt.cla()   # Clear axis
             plt.clf()   # Clear figure
             plt.close() # Close a figure window
 
         
-        
+            distribution_file.append("plt.savefig('distribution-overview.pdf', dpi = 600)")
+            distribution_file.append("plt.savefig('distribution-overview.png', dpi = 600)")
+            distribution_file.append("plt.cla()   # Clear axis")
+            distribution_file.append("plt.clf()   # Clear figure")
+            distribution_file.append("plt.close() # Close a figure window")
+            
+            distribution_file_filename = os.path.join(output_folder, 'distribution-overview.py')
+            with open(distribution_file_filename, "wt") as out:
+                out.write("%s\n" % "\n".join(distribution_file))
+            
         
 
 
