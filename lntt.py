@@ -813,11 +813,11 @@ class LNTT(multiprocessing.Process):
             col_cnt += 1
             data_frame.insert(col_cnt, "%s tStatistic" % test_name,  t_statistic, True)
             col_cnt += 1
-            data_frame.insert(col_cnt, "%s p­Value" % test_name,  p_values, True)
+            data_frame.insert(col_cnt, "%s pValue" % test_name,  p_values, True)
             col_cnt += 1
             data_frame.insert(col_cnt, "%s test result" % test_name,  test_result_unadj, True)
             col_cnt += 1
-            data_frame.insert(col_cnt, "%s adj p­Value" % test_name,  adjusted_p_values, True)
+            data_frame.insert(col_cnt, "%s adj pValue" % test_name,  adjusted_p_values, True)
             col_cnt += 1
             data_frame.insert(col_cnt, "%s test result, adjusted" % test_name,  test_result, True)
             col_cnt += 1
