@@ -62,6 +62,9 @@ def is_float_or_nan(val):
 isnumeric_or_nan = np.vectorize(is_float_or_nan, otypes = [bool])
 
 
+
+
+
 class TextScrollCombo(ttk.Frame):
 
     def __init__(self, *args, **kwargs):
@@ -253,6 +256,8 @@ class Welcome(tk.Frame):
         button_open_parameters["command"] = self.open_parmeters_loading
     
     
+    
+    
     def open_Excel_loading(self):
         self.root.destroy()
         app = Excel_loading(tk.Tk(), self.queues)
@@ -389,6 +394,7 @@ class Excel_loading(tk.Frame):
         self.excel_name = fd.askopenfilename(title = "Select Excel file",filetypes = (("Excel file", "*.xlsx"), ("Excel 97 file", "*.xls"), ("Comma separated values file", "*.csv"), ("Tab separated values file", "*.tsv"), ("all files", "*.*")))
         if len(self.excel_name) == 0: return
     
+        self.excel_name = lntt.get_relative_path(self.excel_name)
         self.parameters["data_file"] = self.excel_name
         self.open_progress_bar()
         self.loaded = False
@@ -1138,7 +1144,7 @@ class LNTT_GUI(tk.Frame):
     def select_output_folder(self):
         dir_name = fd.askdirectory(title = "Select output directory")
         if dir_name != None:
-            self.parameters["output_folder"] = dir_name
+            self.parameters["output_folder"] = lntt.get_relative_path(dir_name)
             
             
             

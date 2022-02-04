@@ -62,7 +62,27 @@ pval_adjust_methods = {"bonferroni": "Bonferoni, one-step correction",
 ttest_types = {"two-sided": "two-sided",
                "less": "one-sided, less",
                "greater": "one-sided, greater"}
-                    
+                
+                
+                
+                
+                
+def get_relative_path(file_path):
+    script_path = os.getcwd()
+
+    if os.path.isabs(file_path):
+        script_tokens = os.path.normpath(script_path).split(os.sep)
+        file_tokens = os.path.normpath(file_path).split(os.sep)
+        if script_tokens[0] == file_tokens[0]:
+            while len(script_tokens) > 0 and len(file_tokens) > 0 and script_tokens[0] == file_tokens[0]:
+                script_tokens = script_tokens[1:]
+                file_tokens = file_tokens[1:]
+        
+        file_path = os.path.join(*[".."] * len(script_tokens), *file_tokens) if len(file_tokens) > 0 else "."
+    return file_path
+
+
+
 
 
 class LNTT(multiprocessing.Process):
