@@ -118,19 +118,30 @@ class LNTT(multiprocessing.Process):
     
     
     def data_frame_imputation(self, data_frame, column_names, parameters, internal_queue, report):
-        data_frame_imputation = parameters["data_imputation_value"]
-        
-        self.logging.put("Imputing the data containing at most %i missing values per entitiy" % data_frame_imputation)
+        data_imputation_value = parameters["data_imputation_value"]
         num_pre = len(data_frame)
-        if data_frame_imputation > 0:
-            if report != None: report.append("Values were imputed when an entity contained up to %i missing values." % data_frame_imputation)
-            rows_to_drop = list(data_frame[column_names].isnull().sum(axis = 1) >= data_frame_imputation)
-            rows_to_drop = np.array([idx for idx, v in enumerate(rows_to_drop) if v])
-            data_frame.drop(rows_to_drop, inplace = True)
-            data_frame.reset_index(inplace = True, drop = True)
+        
+        if data_imputation_value > 0:
             
+            if not "absolute_data_imputation" in parameters or parameters["absolute_data_imputation"]:
+                self.logging.put("Imputing the data containing at most %i missing values per row" % data_imputation_value)
+            
+                if report != None: report.append("Values were imputed when a row contained up to %i missing values." % data_imputation_value)
+                rows_to_drop = list(data_frame[column_names].isnull().sum(axis = 1) >= data_imputation_value)
+                rows_to_drop = np.array([idx for idx, v in enumerate(rows_to_drop) if v])
+                
+            else:
+                self.logging.put("Imputing the data containing at least %i %s present values per row for each condition." % (data_imputation_value * 100, "%"))
+                if report != None: report.append("Values were imputed when all conditions within a row contained at least %i %s present values." % (data_imputation_value * 100, "%"))
+                rows_to_drop = np.zeros(num_pre, dtype = np.float64)
+                for curr_condition, curr_condition_names in parameters["conditions"].items():
+                    rows_to_drop += (len(curr_condition_names) - data_frame[curr_condition_names].isna().sum(axis = 1)) / len(curr_condition_names) < data_imputation_value
+                rows_to_drop = [i for i, df in enumerate(rows_to_drop) if df > 0]
+                
+                
             set_col_names = set(column_names)
-            for ci, col in enumerate(data_frame):
+            imputation_max_values = []
+            for ci, col in enumerate(column_names):
                 try:
                     result = internal_queue.get_nowait()
                     if result != None:
@@ -140,11 +151,27 @@ class LNTT(multiprocessing.Process):
                     pass
                 if col not in set_col_names: continue
                 l = sorted(list(v for v in data_frame[col] if not isnan(v)))
-                max_val = l[int(len(l) * 0.05)]
+                imputation_max_values.append(l[int(len(l) * 0.05)])
+            imputation_max_values = np.array(imputation_max_values)
+            
+            data_frame.drop(rows_to_drop, inplace = True)
+            data_frame.reset_index(inplace = True, drop = True)
+            
+            for i, row in data_frame.iterrows():
+                try:
+                    result = internal_queue.get_nowait()
+                    if result != None:
+                        self.interrupt = True
+                        return
+                except:
+                    pass
                 
-                for i, v in enumerate(data_frame[col].isnull()):
-                    if v:
-                        data_frame.iloc[i, ci] = max_val * random()
+                na_cols = set(c for c, v in zip(column_names, row[column_names].isna()) if v)
+                if len(na_cols) == 0: continue
+                na_col_indexes = [i for i, c in enumerate(data_frame) if c in na_cols]
+                col_indexes = list(i for i, v in enumerate(row[column_names].isna()) if v)
+            
+                data_frame.iloc[i, na_col_indexes] = imputation_max_values[col_indexes] * np.random.uniform(size = len(col_indexes))
         
         else:
             # delete all rows that are not fully filled
@@ -153,6 +180,7 @@ class LNTT(multiprocessing.Process):
             rows_to_drop = np.array([idx for idx, v in enumerate(rows_to_drop) if v])
             data_frame.drop(rows_to_drop, inplace = True)
             data_frame.reset_index(inplace = True, drop = True)
+            
 
         num_post = len(data_frame)
         self.logging.put("After data imputation, %s of %s entities remain" % (num_post, num_pre))
@@ -1528,13 +1556,12 @@ class LNTT(multiprocessing.Process):
         
         if report != None: report.append("Gene names are retrieved by accession numbers using Uniprot API (time stamp: %s)." % date_time)
         self.logging.put("Gene names are retrieved")
-        max_accession_per_request = 500
+        max_accession_per_request = 200
         
-        uniprot_url = 'https://www.uniprot.org/uploadlists/'
+        uniprot_url = 'https://rest.uniprot.org/uniprotkb/accessions?accessions=%s'
         
         accessions = list(data_frame[accession_column])
         num_accessions = len(accessions)
-        accession_pos = {accession.split(";")[0]: i for i, accession in enumerate(accessions)}
         gene_names = list(accessions)
         
         requests = 0
@@ -1544,33 +1571,24 @@ class LNTT(multiprocessing.Process):
                 if result != None:
                     self.interrupt = True
                     return
-            except:
+            except Exception as e:
                 pass
             max_val = min(requests + max_accession_per_request, num_accessions)
-            params = {
-            'from': 'ACC+ID',
-            'to': 'GENE+NAME',
-            'format': 'tab',
-            'query': " ".join(accessions[requests : max_val])
-            }
-            requests = max_val
-
-            data = urllib.parse.urlencode(params)
-            data = data.encode('utf-8')
-            req = urllib.request.Request(uniprot_url, data)
+            req = urllib.request.Request(uniprot_url % "%2C".join(accessions[requests : max_val]))
             try:
-                with urllib.request.urlopen(req, timeout=10) as f:
+                with urllib.request.urlopen(req, timeout = 10) as f:
                     response = f.read()
-                    for i, line in enumerate(response.decode('utf-8').split("\n")):
-                        if self.interrupt: return
-                        if i == 0 or len(line) == 0: continue
-                        tokens = line.split("\t")
-                        if tokens[0] in accession_pos:
-                            gene_names[accession_pos[tokens[0]]] = tokens[1]
+                    response = json.loads(response)
+                    for i, entry in enumerate(response["results"]):
+                        if "genes" in entry and len(entry["genes"]) > 0 and "geneName" in entry["genes"][0] and "value" in entry["genes"][0]["geneName"]:
+                            gene_names[requests + i] = entry["genes"][0]["geneName"]["value"]
                 self.logging.put("Already %i of %i accessions requested" % (requests, num_accessions))
                 
-            except:
+            except Exception as e:
+                self.logging.put("Error: %s" % e)
                 pass
+            
+            requests = max_val
                 
         data_frame["Genes"] = gene_names
 
